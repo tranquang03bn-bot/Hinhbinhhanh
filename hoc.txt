@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Học Liệu Tương Tác: Hình Bình Hành</title>
+    <style>
+        :root {
+            --primary: #4361ee;
+            --primary-hover: #3a53d0;
+            --success: #2ecc71;
+            --danger: #e74c3c;
+            --bg-color: #f8f9fa;
+            --card-bg: #ffffff;
+            --text-dark: #2b2d42;
+            --text-light: #8d99ae;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { background-color: var(--bg-color); color: var(--text-dark); overflow-x: hidden; touch-action: none; }
+        
+        .container { max-width: 900px; margin: 0 auto; padding: 20px; min-height: 100vh; display: flex; flex-direction: column; justify-content: center; }
+        .hidden { display: none !important; }
+        .text-center { text-align: center; }
+
+        /* Login & Menu */
+        .card { background: var(--card-bg); padding: 30px; border-radius: 12px; box-shadow: 0 8px 16px rgba(0,0,0,0.05); }
+        .form-group { margin-bottom: 15px; text-align: left; }
+        .form-group label { display: block; margin-bottom: 5px; font-weight: bold; }
+        .form-control { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 16px; }
+        .btn { background: var(--primary); color: white; border: none; padding: 12px 24px; border-radius: 8px; font-size: 16px; cursor: pointer; font-weight: bold; transition: 0.2s; }
+        .btn:hover { background: var(--primary-hover); }
+        .btn-success { background: var(--success); }
+        .btn-outline { background: transparent; border: 2px solid var(--primary); color: var(--primary); }
+        
+        .game-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px; margin-top: 20px; }
+        .game-card { border: 2px solid #ddd; padding: 20px; border-radius: 10px; cursor: pointer; transition: 0.3s; text-align: center; }
+        .game-card:hover { border-color: var(--primary); background: #f0f4ff; }
+
+        /* Game Sceen */
+        #game-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .drop-area { display: flex; flex-direction: column; gap: 15px; margin-bottom: 30px; }
+        .dropzone { min-height: 80px; border: 2px dashed #a0aabf; border-radius: 8px; display: flex; align-items: center; padding: 10px; background: #fafbfc; position: relative; transition: 0.3s; }
+        .dropzone::before { content: attr(data-label); position: absolute; color: #a0aabf; font-weight: bold; width: 100%; text-align: center; z-index: 0; pointer-events: none; }
+        .dropzone.correct { border-color: var(--success); background: #e8f8f5; }
+        
+        .drag-area { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; min-height: 100px; padding: 15px; background: #eef2f7; border-radius: 8px; }
+        .draggable { background: white; border: 2px solid var(--primary); padding: 12px 20px; border-radius: 8px; cursor: grab; font-weight: bold; color: var(--primary); user-select: none; z-index: 10; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        .draggable.dragging { opacity: 0.8; cursor: grabbing; z-index: 9999 !important; margin: 0 !important; box-shadow: 0 10px 15px rgba(0,0,0,0.2); }
+        
+        /* Animations */
+        .bounce-back { transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        .correct-label { position: absolute; right: -10px; top: -10px; background: var(--success); color: white; font-size: 12px; padding: 4px 8px; border-radius: 10px; font-weight: bold; animation: popIn 0.3s forwards; z-index: 5; }
+        @keyframes popIn { 0% { transform: scale(0); } 80% { transform: scale(1.2); } 100% { transform: scale(1); } }
+
+        /* Report Screen */
+        .radial-progress { width: 150px; height: 150px; border-radius: 50%; background: conic-gradient(var(--success) var(--progress), #eee 0deg); display: flex; align-items: center; justify-content: center; margin: 20px auto; position: relative; }
+        .radial-progress::before { content: ''; position: absolute; inset: 15px; background: white; border-radius: 50%; }
+        .radial-progress span { position: relative; font-size: 32px; font-weight: bold; }
+        
+        .table-responsive { overflow-x: auto; margin-top: 20px; }
+        table { width: 100%; border-collapse: collapse; text-align: left; background: white; }
+        th, td { border: 1px solid #ddd; padding: 12px; }
+        th { background-color: var(--primary); color: white; }
+
+        @media print {
+            body { background: white; }
+            .btn, .no-print { display: none !important; }
+            .card { box-shadow: none; border: 1px solid #ddd; }
+            .radial-progress { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- 1. Màn hình đăng nhập -->
+        <div id="login-view" class="card text-center">
+            <h2>Học Liệu Tương Tác: Hình Bình Hành</h2>
+            <p>Vui lòng nhập thông tin để bắt đầu</p>
+            <div class="form-group" style="margin-top: 20px;">
+                <label>Họ và Tên</label>
+                <input type="text" id="student-name" class="form-control" placeholder="Ví dụ: Nguyễn Văn A">
+            </div>
+            <div class="form-group">
+                <label>Lớp</label>
+                <input type="text" id="student-class" class="form-control" placeholder="Ví dụ: 8A1">
+            </div>
+            <button class="btn" onclick="app.login()">Bắt Đầu Hệ Thống</button>
+        </div>
+
+        <!-- 2. Màn hình chọn Game -->
+        <div id="menu-view" class="card text-center hidden">
+            <h3>Chào <span id="display-name" style="color: var(--primary)"></span>, hãy chọn cấp độ thử thách:</h3>
+            <div class="game-grid" id="game-list"></div>
+            <button class="btn btn-outline" style="margin-top:20px" onclick="app.showHistory()">Xem Bảng Điểm Lịch Sử</button>
+        </div>
+
+        <!-- 3. Màn hình Game -->
+        <div id="game-view" class="hidden">
+            <div class="card">
+                <div id="game-header">
+                    <h3 id="game-title"></h3>
+                    <span id="game-timer" style="font-weight: bold; color: var(--danger)">00:00</span>
+                </div>
+                <p id="game-instruction" style="margin-bottom: 20px; font-style: italic;"></p>
+                <div class="drop-area" id="drop-container"></div>
+                <div class="drag-area" id="drag-container"></div>
+                <div class="text-center" style="margin-top: 20px;">
+                    <button class="btn btn-outline" onclick="app.showMenu()">Quay lại Menu</button>
+                    <button class="btn btn-success hidden" id="btn-finish" onclick="app.finishGame()">Hoàn thành & Chấm điểm</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 4. Màn hình Báo cáo -->
+        <div id="report-view" class="card hidden text-center">
+            <h2>Báo Cáo Kết Quả</h2>
+            <div class="radial-progress" id="score-radial" style="--progress: 0%">
+                <span id="score-text">0%</span>
+            </div>
+            <h3 id="grade-text"></h3>
+            <p id="feedback-text" style="color: var(--text-light); margin: 10px 0 20px;"></p>
+            
+            <div class="table-responsive">
+                <h4>Phân tích chi tiết:</h4>
+                <table id="review-table">
+                    <thead><tr><th>Mục tiêu</th><th>Đáp án của bạn</th><th>Giải thích bản chất</th></tr></thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+            <div class="no-print" style="margin-top: 20px; display: flex; gap: 10px; justify-content: center;">
+                <button class="btn" onclick="app.showMenu()">Chơi Bài Khác</button>
+                <button class="btn btn-success" onclick="app.exportPDF()">Xuất Báo Cáo PDF</button>
+            </div>
+        </div>
+
+        <!-- 5. Bảng Vàng Lịch Sử -->
+        <div id="history-view" class="card hidden text-center">
+            <h2>Bảng Lịch Sử Lượt Chơi</h2>
+            <div class="table-responsive">
+                <table id="history-table">
+                    <thead><tr><th>Họ Tên</th><th>Lớp</th><th>Trò chơi</th><th>Điểm số</th><th>Thời gian</th><th>Ngày chơi</th></tr></thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+            <div class="no-print" style="margin-top: 20px; display: flex; gap: 10px; justify-content: center;">
+                <button class="btn btn-outline" onclick="app.showMenu()">Quay lại Menu</button>
+                <button class="btn btn-success" onclick="app.exportCSV()">Xuất Excel (CSV)</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- 1. SAFE STORAGE (IFrame Defense) ---
+        const safeStorage = {
+            _data: {},
+            setItem: function(key, value) {
+                try { localStorage.setItem(key, value); }
+                catch(e) { this._data[key] = value; }
+            },
+            getItem: function(key) {
+                try { return localStorage.getItem(key) || this._data[key] || null; }
+                catch(e) { return this._data[key] || null; }
+            }
+        };
+
+        // --- 2. GAME DATA (Hình Bình Hành - Toán 8) ---
+        const gameData = [
+            {
+                id: "g1", title: "Cấp độ 1: Nhận biết tính chất",
+                instruction: "Kéo thả các đặc điểm đúng vào nhóm tính chất tương ứng của Hình bình hành.",
+                targets: [
+                    { id: "t_canh", label: "Tính chất về Cạnh" },
+                    { id: "t_goc", label: "Tính chất về Góc" },
+                    { id: "t_cheo", label: "Tính chất Đường chéo" }
+                ],
+                drags: [
+                    { id: "d1", content: "Các cạnh đối song song và bằng nhau", match: "t_canh", correct_text: "Chính xác!", exp: "Hình bình hành có các cặp cạnh đối vừa song song vừa bằng nhau." },
+                    { id: "d2", content: "Các góc đối bằng nhau", match: "t_goc", correct_text: "Chính xác!", exp: "Trong hình bình hành, hai góc đối diện luôn có số đo bằng nhau." },
+                    { id: "d3", content: "Hai đường chéo cắt nhau tại trung điểm", match: "t_cheo", correct_text: "Chính xác!", exp: "Đường chéo không bằng nhau nhưng giao điểm của chúng chia đôi mỗi đường." },
+                    // Nhiễu
+                    { id: "d_err1", content: "Hai đường chéo vuông góc", match: null, correct_text: "", exp: "Sai. Đây là tính chất của hình thoi, không phải hình bình hành thường." },
+                    { id: "d_err2", content: "Bốn cạnh bằng nhau", match: null, correct_text: "", exp: "Sai. Chỉ hình thoi hoặc hình vuông mới có 4 cạnh bằng nhau." }
+                ]
+            },
+            {
+                id: "g2", title: "Cấp độ 2: Ghép nối Công thức",
+                instruction: "Hãy ghép đúng công thức tính Chu vi (P) và Diện tích (S) của hình bình hành (với a,b là 2 cạnh kề, h là chiều cao tương ứng với cạnh a).",
+                targets: [
+                    { id: "t_P", label: "Chu vi (P) =" },
+                    { id: "t_S", label: "Diện tích (S) =" }
+                ],
+                drags: [
+                    { id: "d4", content: "2 × (a + b)", match: "t_P", correct_text: "Chính xác!", exp: "Chu vi bằng tổng độ dài 4 cạnh, do các cặp cạnh đối bằng nhau nên P = 2(a+b)." },
+                    { id: "d5", content: "a × h", match: "t_S", correct_text: "Chính xác!", exp: "Diện tích hình bình hành bằng độ dài một cạnh đáy nhân với chiều cao tương ứng." },
+                    // Nhiễu
+                    { id: "d_err3", content: "1/2 × a × h", match: null, correct_text: "", exp: "Sai. Đây là công thức diện tích tam giác." },
+                    { id: "d_err4", content: "4 × a", match: null, correct_text: "", exp: "Sai. Đây là công thức chu vi hình vuông/hình thoi." }
+                ]
+            },
+            {
+                id: "g3", title: "Cấp độ 3: Thực hành Tính toán",
+                instruction: "Tính nhẩm và kéo thả kết quả đúng vào ô bài toán.",
+                targets: [
+                    { id: "t_c1", label: "Đáy a=5cm, cao h=4cm. S = ?" },
+                    { id: "t_c2", label: "Cạnh a=6cm, b=4cm. P = ?" }
+                ],
+                drags: [
+                    { id: "d6", content: "20 cm²", match: "t_c1", correct_text: "Chính xác!", exp: "S = a × h = 5 × 4 = 20 (cm²)" },
+                    { id: "d7", content: "20 cm", match: "t_c2", correct_text: "Chính xác!", exp: "P = 2 × (a + b) = 2 × (6 + 4) = 20 (cm)" },
+                    // Nhiễu
+                    { id: "d_err5", content: "10 cm²", match: null, correct_text: "", exp: "Sai. Bạn đang nhầm sang diện tích tam giác (1/2 x 5 x 4)." },
+                    { id: "d_err6", content: "24 cm", match: null, correct_text: "", exp: "Sai. Bạn đang tính nhầm sang diện tích (6 x 4)." }
+                ]
+            }
+        ];
+
+        // --- 3. WEB AUDIO API ---
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        function playTone(type) {
+            if(audioCtx.state === 'suspended') audioCtx.resume();
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            
+            if(type === 'correct') {
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(880, audioCtx.currentTime); // A5
+                osc.frequency.exponentialRampToValueAtTime(1760, audioCtx.currentTime + 0.1);
+                gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
+                osc.start(); osc.stop(audioCtx.currentTime + 0.1);
+            } else {
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(200, audioCtx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(100, audioCtx.currentTime + 0.2);
+                gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.2);
+                osc.start(); osc.stop(audioCtx.currentTime + 0.2);
+            }
+        }
+
+        // --- 4 & 5. APP CONTROLLER & DRAG LOGIC ---
+        const app = {
+            studentInfo: {},
+            currentGameData: null,
+            startTime: 0,
+            timerInterval: null,
+            matchedCount: 0,
+            answers: {}, 
+
+            login() {
+                const name = document.getElementById('student-name').value.trim();
+                const cls = document.getElementById('student-class').value.trim();
+                if(!name || !cls) return alert("Vui lòng nhập đầy đủ Họ tên và Lớp!");
+                this.studentInfo = { name, cls };
+                document.getElementById('display-name').innerText = name;
+                document.getElementById('login-view').classList.add('hidden');
+                this.renderMenu();
+                this.showMenu();
+            },
+
+            renderMenu() {
+                const grid = document.getElementById('game-list');
+                grid.innerHTML = '';
+                gameData.forEach((g, idx) => {
+                    const card = document.createElement('div');
+                    card.className = 'game-card';
+                    card.innerHTML = `<h4>${g.title}</h4><p style="font-size:12px; margin-top:10px;">Gồm ${g.targets.length} câu hỏi</p>`;
+                    card.onclick = () => this.startGame(idx);
+                    grid.appendChild(card);
+                });
+            },
+
+            showMenu() {
+                document.querySelectorAll('.container > div').forEach(d => d.classList.add('hidden'));
+                document.getElementById('menu-view').classList.remove('hidden');
+                clearInterval(this.timerInterval);
+            },
+
+            startGame(idx) {
+                this.currentGameData = gameData[idx];
+                this.matchedCount = 0;
+                this.answers = {};
+                
+                document.getElementById('menu-view').classList.add('hidden');
+                document.getElementById('report-view').classList.add('hidden');
+                document.getElementById('game-view').classList.remove('hidden');
+                
+                document.getElementById('game-title').innerText = this.currentGameData.title;
+                document.getElementById('game-instruction').innerText = this.currentGameData.instruction;
+                document.getElementById('btn-finish').classList.add('hidden');
+
+                // Render Targets
+                const dropContainer = document.getElementById('drop-container');
+                dropContainer.innerHTML = '';
+                this.currentGameData.targets.forEach(t => {
+                    const dz = document.createElement('div');
+                    dz.className = 'dropzone';
+                    dz.dataset.id = t.id;
+                    dz.dataset.label = t.label;
+                    dropContainer.appendChild(dz);
+                });
+
+                // Render Draggables (Shuffle)
+                const dragContainer = document.getElementById('drag-container');
+                dragContainer.innerHTML = '';
+                let drags = [...this.currentGameData.drags].sort(() => Math.random() - 0.5);
+                
+                drags.forEach(d => {
+                    const el = document.createElement('div');
+                    el.className = 'draggable';
+                    el.innerText = d.content;
+                    el.dataset.id = d.id;
+                    el.dataset.match = d.match || "none";
+                    this.initDrag(el);
+                    dragContainer.appendChild(el);
+                });
+
+                this.startTimer();
+            },
+
+            startTimer() {
+                this.startTime = Date.now();
+                const timerEl = document.getElementById('game-timer');
+                this.timerInterval = setInterval(() => {
+                    const diff = Math.floor((Date.now() - this.startTime) / 1000);
+                    const m = String(Math.floor(diff / 60)).padStart(2, '0');
+                    const s = String(diff % 60).padStart(2, '0');
+                    timerEl.innerText = `${m}:${s}`;
+                }, 1000);
+            },
+
+            initDrag(el) {
+                let startX, startY, initialX, initialY, clonePlaceholder;
+
+                const startDrag = (e) => {
+                    if (el.classList.contains('dropped')) return;
+                    e.preventDefault(); // Ngăn cuộn trang trên mobile
+                    const touch = e.type === 'touchstart' ? e.touches[0] : e;
+                    
+                    const rect = el.getBoundingClientRect();
+                    startX = touch.clientX;
+                    startY = touch.clientY;
+                    
+                    // Tạo placeholder giữ vị trí để không hỏng layout
+                    clonePlaceholder = el.cloneNode(true);
+                    clonePlaceholder.style.visibility = 'hidden';
+                    clonePlaceholder.style.opacity = '0';
+                    el.parentNode.insertBefore(clonePlaceholder, el);
+                    
+                    // Set absolute
+                    el.style.position = 'fixed';
+                    el.style.left = rect.left + 'px';
+                    el.style.top = rect.top + 'px';
+                    el.style.width = rect.width + 'px';
+                    initialX = rect.left;
+                    initialY = rect.top;
+                    
+                    el.classList.add('dragging');
+                    el.style.transition = 'none'; // Bỏ transition khi đang kéo
+
+                    document.addEventListener(e.type === 'touchstart' ? 'touchmove' : 'mousemove', moveDrag, {passive: false});
+                    document.addEventListener(e.type === 'touchstart' ? 'touchend' : 'mouseup', endDrag);
+                };
+
+                const moveDrag = (e) => {
+                    e.preventDefault();
+                    const touch = e.type === 'touchmove' ? e.touches[0] : e;
+                    const dx = touch.clientX - startX;
+                    const dy = touch.clientY - startY;
+                    el.style.transform = `translate(${dx}px, ${dy}px)`;
+                };
+
+                const endDrag = (e) => {
+                    document.removeEventListener(e.type === 'touchend' ? 'touchmove' : 'mousemove', moveDrag);
+                    document.removeEventListener(e.type === 'touchend' ? 'touchend' : 'mouseup', endDrag);
+                    
+                    el.classList.remove('dragging');
+                    const touch = e.type === 'touchend' ? e.changedTouches[0] : e;
+                    
+                    // Ẩn tạm phần tử kéo để lấy phần tử bên dưới (Dropzone)
+                    el.style.display = 'none';
+                    const targetEl = document.elementFromPoint(touch.clientX, touch.clientY);
+                    el.style.display = 'block';
+
+                    const dropzone = targetEl ? targetEl.closest('.dropzone') : null;
+
+                    if (dropzone && dropzone.dataset.id === el.dataset.match && !dropzone.classList.contains('correct')) {
+                        // Thả ĐÚNG
+                        playTone('correct');
+                        dropzone.appendChild(el);
+                        dropzone.classList.add('correct');
+                        el.style.position = 'static';
+                        el.style.transform = 'none';
+                        el.style.width = 'auto';
+                        el.classList.add('dropped');
+                        
+                        const label = document.createElement('span');
+                        label.className = 'correct-label';
+                        label.innerText = 'Chính xác!';
+                        dropzone.appendChild(label);
+                        
+                        clonePlaceholder.remove();
+                        
+                        // Lưu đáp án
+                        this.answers[dropzone.dataset.id] = true;
+                        this.matchedCount++;
+                        
+                        if(this.matchedCount === this.currentGameData.targets.length) {
+                            document.getElementById('btn-finish').classList.remove('hidden');
+                        }
+                    } else {
+                        // Thả SAI -> Bounce back
+                        playTone('wrong');
+                        el.style.transition = 'transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)';
+                        el.style.transform = 'translate(0, 0)';
+                        
+                        setTimeout(() => {
+                            el.style.position = 'static';
+                            el.style.transition = 'none';
+                            clonePlaceholder.parentNode.replaceChild(el, clonePlaceholder);
+                        }, 400);
+                    }
+                };
+
+                el.addEventListener('mousedown', startDrag);
+                el.addEventListener('touchstart', startDrag, {passive: false});
+            },
+
+            // --- 6. SCORING & REPORTING ---
+            finishGame() {
+                clearInterval(this.timerInterval);
+                const timeStr = document.getElementById('game-timer').innerText;
+                const totalTargets = this.currentGameData.targets.length;
+                
+                // Mặc định do bắt buộc kéo thả đúng mới cho xong nên điểm là 100%. 
+                // Ở phiên bản này học sinh sẽ học qua việc thử lỗi. 
+                const scorePercent = 100; 
+
+                // Lưu lịch sử
+                const history = JSON.parse(safeStorage.getItem('gameHistory') || '[]');
+                history.push({
+                    name: this.studentInfo.name,
+                    cls: this.studentInfo.cls,
+                    game: this.currentGameData.title,
+                    score: scorePercent,
+                    time: timeStr,
+                    date: new Date().toLocaleDateString('vi-VN')
+                });
+                safeStorage.setItem('gameHistory', JSON.stringify(history));
+
+                // Chuyển view
+                document.getElementById('game-view').classList.add('hidden');
+                document.getElementById('report-view').classList.remove('hidden');
+
+                // Render Progress
+                setTimeout(() => {
+                    document.getElementById('score-radial').style.setProperty('--progress', `${scorePercent}%`);
+                    document.getElementById('score-text').innerText = `${scorePercent}%`;
+                }, 100);
+
+                // Feedback
+                document.getElementById('grade-text').innerText = "Xuất sắc!";
+                document.getElementById('grade-text').style.color = "var(--success)";
+                document.getElementById('feedback-text').innerText = "Bạn đã nắm rất vững kiến thức về Hình bình hành. Hãy phát huy nhé!";
+
+                // Render Review Table
+                const tbody = document.querySelector('#review-table tbody');
+                tbody.innerHTML = '';
+                this.currentGameData.targets.forEach(t => {
+                    const dragObj = this.currentGameData.drags.find(d => d.match === t.id);
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td>${t.label}</td>
+                        <td style="color:var(--success); font-weight:bold;">${dragObj.content}</td>
+                        <td>${dragObj.exp}</td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            },
+
+            // --- 7. HISTORY & EXPORT ---
+            showHistory() {
+                document.querySelectorAll('.container > div').forEach(d => d.classList.add('hidden'));
+                document.getElementById('history-view').classList.remove('hidden');
+                
+                const history = JSON.parse(safeStorage.getItem('gameHistory') || '[]');
+                const tbody = document.querySelector('#history-table tbody');
+                tbody.innerHTML = '';
+                if(history.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="6">Chưa có dữ liệu lịch sử</td></tr>';
+                    return;
+                }
+                history.forEach(h => {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `<td>${h.name}</td><td>${h.cls}</td><td>${h.game}</td><td>${h.score}%</td><td>${h.time}</td><td>${h.date}</td>`;
+                    tbody.appendChild(tr);
+                });
+            },
+
+            exportCSV() {
+                const history = JSON.parse(safeStorage.getItem('gameHistory') || '[]');
+                if(history.length === 0) return alert("Không có dữ liệu để xuất!");
+                
+                let csvContent = '\uFEFFHọ Tên;Lớp;Trò Chơi;Điểm Số;Thời Gian;Ngày Chơi\n';
+                history.forEach(h => {
+                    csvContent += `${h.name};${h.cls};${h.game};${h.score}%;${h.time};${h.date}\n`;
+                });
+
+                const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+                const link = document.createElement("a");
+                link.href = URL.createObjectURL(blob);
+                link.download = `BangDiem_HinhBinhHanh_${new Date().getTime()}.csv`;
+                link.click();
+            },
+
+            exportPDF() {
+                window.print();
+            }
+        };
+    </script>
+</body>
+</html>
